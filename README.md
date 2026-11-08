@@ -1,8 +1,8 @@
 # Learning a rubber grip ring from video
 
-I used a Decathlon "25 kg" hand-grip ring (75 g, 86 mm across, 21 mm tall). It lies flat on a table, I squeeze it across a diameter with my thumb and finger, hold it, and let go. I filmed this from above in iPhone slow motion at 120 and 240 fps.
+I used a Decathlon "25 kg" hand-grip ring (75 g, 86 mm across, 21 mm tall). I lay it flat on a table, squeeze it with my thumb and finger, hold, and let go. I filmed it from above in slow motion (120 and 240 fps).
 
-From the video I fit a simple 2D finite-element model of the ring. On a take the model never saw, it predicts the ring's shape while squeezed to within 0.2–0.4 mm, and its free recovery after release to within 1.3 mm.
+I then built a simple computer model of the ring and tuned it using the video. On a video the model never saw, it predicts the ring's shape while squeezed to within 0.2–0.4 mm, and how it springs back to within 1.3 mm.
 
 **Live demo:** [add Vercel link]
 
@@ -10,77 +10,78 @@ From the video I fit a simple 2D finite-element model of the ring. On a take the
 
 ## Running it
 
-The results are already computed, so to see the demo you only need to serve the viewer folder:
+Everything is already computed. To see the demo:
 
 ```bash
 cd viewer
 python3 -m http.server 8000     # open http://localhost:8000
 ```
 
-It needs internet for three.js. `results/demo.mp4` shows the same thing as a normal video.
+It needs internet (for three.js). `results/demo.mp4` shows the same thing as a normal video.
 
 To rebuild everything from the raw videos:
 
 ```bash
 pip install -r requirements.txt
-python track.py --all    # video -> hole size per frame        (~1 min)
-python fit.py            # fit the material                    (~5 min)
-python evaluate.py       # simulate every squeeze, get metrics (~1 min)
-python render.py         # demo video + viewer data            (~30 s)
+python track.py --all    # measure the ring in every frame  (~1 min)
+python fit.py            # tune the model                    (~5 min)
+python evaluate.py       # test it on every squeeze          (~1 min)
+python render.py         # make the demo video and website   (~30 s)
 ```
 
-Videos are in `data/`; frame rates, the train/test split and ring measurements are in `trials.json`.
+Videos are in `data/`. Frame rates, the train/test split and the ring's measurements are in `trials.json`.
 
-## What I did
+## How it works
 
-**Tracking.** I segment the orange ring by colour and fit an ellipse to its hole in every frame. I use the hole because my fingers never cover it. That gives the hole size along the squeeze and across it. Pixels are converted to mm using the ring's 86 mm outer width.
+**1. Measuring the ring.** I find the orange ring by colour and fit an oval to its hole in every frame. I use the hole because my fingers never cover it. That gives two numbers per frame: how narrow the hole gets along the squeeze, and how wide it gets across it.
 
-My ruler reading of the inner diameter (56 mm) turned out to be wrong. Every video says 45 mm, which gives a density of 1.12 g/cm³, right for rubber (56 mm would give 1.9).
+My ruler said the hole was 56 mm, but every video says 45 mm. With 45 mm, the ring's weight works out to the right density for rubber, so the ruler reading was wrong.
 
-**The releases aren't all the same.** In 9 of my 11 squeezes my fingers stayed on the ring as it opened, so the recovery shows my hand's speed, not the rubber's. Only 2 are real "snaps" where my finger slipped off and the ring recovered by itself in about 20 ms, one in training and one in the test take. Only those can tell the model about damping.
+**2. Not every release is useful.** In 9 of my 11 squeezes, my fingers stayed on the ring while it opened, so the video shows my hand's speed, not the rubber's. In only 2 did my finger slip off and the ring spring back on its own (in about 20 ms). One is in the training videos and one in the test video. Only these show how "bouncy" the rubber is.
 
-**The model.** The ring is squeezed in its own plane, so I modelled it in 2D: 384 triangles with the ring's height as thickness and its real 75 g mass. Each triangle is a spring (stiffness E) in parallel with a damper (viscosity η), with its rotation removed before computing strain (co-rotational FEM) so the ring can bend a lot. The fingertips are rigid discs that push but don't pull, and grip the rubber; without the grip the ring squirted out sideways.
+**3. The model.** The ring is squeezed flat on the table, so I modelled it in 2D: the ring's outline split into 384 small triangles (a finite-element model), with the ring's real weight. Each triangle acts like a spring (stiffness) plus a shock absorber (damping). The fingertips are two round pads that push but can't pull, and grip the rubber.
 
-The rubber is so heavily damped that explicit time-stepping would need 10⁻⁷ s steps, so I used implicit Euler. A squeeze simulates in about 3 s.
+The rubber is very heavily damped, which makes simple simulation methods unstable unless the time steps are tiny. So I used a more stable method (implicit Euler). One squeeze takes about 3 seconds to simulate.
 
-**Prediction, not replay.** While I'm pressing, the model's fingers move so its hole shrinks as much as in the video. When I let go, the fingers are deleted and the ring moves only by its fitted material. The sideways widening during the press is also predicted, never given.
+**4. Not just copying the video.** While I'm pressing, the model's fingers follow the video. The moment I let go, the fingers are removed and the ring moves only by its own physics. How wide the hole gets during the press is never given to the model either; it works that out itself.
 
-**Fitting.**
-
-- *Shape while squeezed* checks the geometry: 0.68 mm error on training presses. It's insensitive to Poisson's ratio, so I used 0.49, typical for rubber.
-- *The free snap* gives the damping time constant: η/E = 16.5 ms. An extra slow relaxation term fitted to zero.
-- *Stiffness* can't be pinned down by the video. The press is position-controlled, so the shape doesn't depend on stiffness, and the snap is so overdamped that doubling stiffness and damping together gives the same curve. Over a 32× range of stiffness the error barely changed. So I took E from the rating, assuming "25 kg" is the force to close the hole: E = 3.3 MPa, normal for rubber.
+**5. Tuning the model.**
+- **Shape while squeezed:** checks the geometry. Matches the training videos to 0.68 mm.
+- **Spring-back after a snap:** sets the damping. The time constant is 16.5 ms.
+- **Stiffness:** the video can't tell it apart from damping. A stiffer, more damped ring and a softer, less damped one spring back the same way. So I took stiffness from the "25 kg" rating instead: 3.3 MPa, normal for rubber.
 
 ## Results
 
-The test take (3 squeezes) wasn't used for any fitting:
+The test video (3 squeezes) was never used for tuning:
 
-| test squeeze | release | widening error while squeezed | recovery error | recovery time (real / model) |
-|---|---|---|---|---|
-| 1 | fingers stayed on | 0.31 mm | 5.4 mm | 50 / 33 ms |
-| 2 | fingers stayed on | 0.15 mm | 4.3 mm | 50 / 33 ms |
-| 3 | free snap | 0.43 mm | 1.34 mm | 17 / 33 ms |
+| test squeeze | release | shape error | spring-back error |
+|---|---|---|---|
+| 1 | fingers stayed on | 0.31 mm | 5.4 mm |
+| 2 | fingers stayed on | 0.15 mm | 4.3 mm |
+| 3 | finger slipped off | 0.43 mm | 1.34 mm |
 
-The press shape is under a millimetre every time. The free snap's 1.34 mm is close to the training snap's 1.14 mm, so the model holds up on a new squeeze. On the other two it recovers faster than the real ring, as expected, since my fingers were holding the real one back.
+- The shape while squeezed is right to under 1 mm every time.
+- On the real snap (squeeze 3), the spring-back is right to 1.34 mm, about the same as on the training snap (1.14 mm).
+- On squeezes 1 and 2 the model springs back faster than the real ring. That's expected: my fingers were slowing the real one down.
 
 All 11 squeezes are in `results/metrics.md`.
 
 ## Assumptions
 
-- Flat (2D) deformation; the 3D ring in the viewer is the 2D result wrapped onto the ring's shape.
-- Uniform rubber, linear once rotation is removed.
-- Rigid fingertips that grip; release is instant.
-- "25 kg" is the force to close the hole.
-- Camera looks straight down. The hole is slightly oval at rest, so I compare changes from each take's resting shape.
+- The ring only deforms flat (2D). The 3D ring on the website is the 2D result wrapped onto the ring's shape.
+- The rubber is the same everywhere.
+- The fingertips are rigid and let go instantly.
+- "25 kg" is the force needed to squeeze the hole shut.
+- The camera looks straight down.
 
 ## Limitations
 
-- **Stiffness isn't measured from the video.** A kitchen scale under the ring would fix this; it's the first thing I'd add.
-- **Squeezes over 30 mm break it.** The real hole collapses into a slit (up to 54 mm wide); the model stops near 34 mm. No self-contact, coarse mesh, and 2D can't flatten the tube.
-- **The snap's start differs.** The real one starts slowly while my finger slides off, then speeds up; the model starts instantly with a longer tail (10–90% time: 17–21 ms real vs 33 ms).
-- **Damping comes from two snaps only,** and may include some hand motion, so treat it as an upper bound.
-- **No creep or Poisson's ratio:** long holds were all finger-limited, and ν needs a side view.
+- **Stiffness isn't measured from the video.** Squeezing the ring on a kitchen scale would fix this.
+- **Very hard squeezes break the model.** Past about 30 mm the real hole flattens into a slit; the model can't do that.
+- **The start of the snap is a bit off.** The real ring starts slowly while my finger slides off, then speeds up. The model starts at full speed.
+- **Damping comes from only 2 snaps,** so it may include a little hand movement.
+- **A top-down view can't show** how much the ring bulges upwards, or slow creep over long holds.
 
 ## Credits
 
-OpenCV, NumPy, SciPy, Numba, Matplotlib, pandas, three.js and FFmpeg. The implicit solver follows Baraff & Witkin, "Large Steps in Cloth Simulation" (SIGGRAPH 1998), and the co-rotational FEM follows Müller & Gross, "Interactive Virtual Materials" (GI 2004).
+OpenCV, NumPy, SciPy, Numba, Matplotlib, pandas, three.js and FFmpeg. The simulation method follows Baraff & Witkin (1998) and Müller & Gross (2004).
