@@ -1,0 +1,48 @@
+{
+  "object": {
+    "name": "Decathlon hand grip ring, 25 kg",
+    "mass_g": 75.0,
+    "outer_d_mm": 86.0,
+    "inner_d_mm": 56.0,
+    "height_mm": 21.0,
+    "rated_kg": 25.0,
+    "note": "inner_d_mm is my ruler reading; the video, outer diameter and mass all give ~45 mm (see README). Scale uses outer_d_mm."
+  },
+  "camera": {
+    "distance_cm": 30,
+    "view": "top-down",
+    "container_fps": 30
+  },
+  "trials": [
+    {
+      "name": "pressedsoft_240fps_take1_train",
+      "video": "data/pressedsoft_240fps_take1_train.mp4",
+      "capture_fps": 240,
+      "split": "train"
+    },
+    {
+      "name": "pressedhard_240fps_take2_train",
+      "video": "data/pressedhard_240fps_take2_train.mp4",
+      "capture_fps": 240,
+      "split": "train"
+    },
+    {
+      "name": "pressedsoft_120fps_take4_train",
+      "video": "data/pressedsoft_120fps_take4_train.mp4",
+      "capture_fps": 120,
+      "split": "train"
+    },
+    {
+      "name": "pressedhard_120fps_take5_train",
+      "video": "data/pressedhard_120fps_take5_train.mp4",
+      "capture_fps": 120,
+      "split": "train"
+    },
+    {
+      "name": "pressedhard_120fps_take5_test",
+      "video": "data/pressedhard_120fps_take5_test.mp4",
+      "capture_fps": 120,
+      "split": "test"
+    }
+  ]
+}

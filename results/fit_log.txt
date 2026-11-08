@@ -1,0 +1,95 @@
+rest hole radius 22.7 mm; 8 training squeezes, 1 free snap(s): pressedsoft_240fps_take1_train #1
+
+[1] squeeze shape -> Poisson ratio, fingertip radius
+  nu=0.30 r_f=5 mm  ->  widening RMSE 0.71 mm (squeeze < 30 mm), 10.7 mm beyond
+  nu=0.30 r_f=8 mm  ->  widening RMSE 0.72 mm (squeeze < 30 mm), 10.4 mm beyond
+  nu=0.30 r_f=11 mm  ->  widening RMSE 0.73 mm (squeeze < 30 mm), 10.3 mm beyond
+  nu=0.35 r_f=5 mm  ->  widening RMSE 0.70 mm (squeeze < 30 mm), 10.7 mm beyond
+  nu=0.35 r_f=8 mm  ->  widening RMSE 0.71 mm (squeeze < 30 mm), 10.4 mm beyond
+  nu=0.35 r_f=11 mm  ->  widening RMSE 0.72 mm (squeeze < 30 mm), 10.3 mm beyond
+  nu=0.40 r_f=5 mm  ->  widening RMSE 0.69 mm (squeeze < 30 mm), 10.7 mm beyond
+  nu=0.40 r_f=8 mm  ->  widening RMSE 0.70 mm (squeeze < 30 mm), 10.4 mm beyond
+  nu=0.40 r_f=11 mm  ->  widening RMSE 0.71 mm (squeeze < 30 mm), 10.3 mm beyond
+  nu=0.45 r_f=5 mm  ->  widening RMSE 0.68 mm (squeeze < 30 mm), 10.7 mm beyond
+  nu=0.45 r_f=8 mm  ->  widening RMSE 0.69 mm (squeeze < 30 mm), 10.5 mm beyond
+  nu=0.45 r_f=11 mm  ->  widening RMSE 0.70 mm (squeeze < 30 mm), 10.4 mm beyond
+  nu=0.49 r_f=5 mm  ->  widening RMSE 0.67 mm (squeeze < 30 mm), 10.7 mm beyond
+  nu=0.49 r_f=8 mm  ->  widening RMSE 0.68 mm (squeeze < 30 mm), 10.5 mm beyond
+  nu=0.49 r_f=11 mm  ->  widening RMSE 0.69 mm (squeeze < 30 mm), 10.4 mm beyond
+  best: nu=0.49 r_f=5 mm (6s)
+
+[2] stiffness from the 25 kg rating
+  model force to close the hole at E=1 MPa: 75 N  ->  E = 3.28 MPa for 245 N (25 kg)
+
+[3] snap-back -> viscosity and relaxation
+    eta/E=15.0ms beta=0.15 tau_m=80ms -> 1.535 mm
+    eta/E=24.7ms beta=0.15 tau_m=80ms -> 2.394 mm
+    eta/E=15.0ms beta=0.45 tau_m=80ms -> 2.949 mm
+    eta/E=15.0ms beta=0.15 tau_m=217ms -> 1.651 mm
+    eta/E=20.9ms beta=0.00 tau_m=156ms -> 1.414 mm
+    eta/E=24.7ms beta=0.00 tau_m=217ms -> 1.861 mm
+    eta/E=11.4ms beta=0.00 tau_m=243ms -> 1.636 mm
+    eta/E=15.6ms beta=0.00 tau_m=96ms -> 1.158 mm
+    eta/E=15.9ms beta=0.00 tau_m=64ms -> 1.149 mm
+    eta/E=25.7ms beta=0.00 tau_m=35ms -> 1.979 mm
+    eta/E=13.9ms beta=0.00 tau_m=150ms -> 1.270 mm
+    eta/E=18.5ms beta=0.00 tau_m=164ms -> 1.206 mm
+    eta/E=12.2ms beta=0.00 tau_m=87ms -> 1.492 mm
+    eta/E=18.3ms beta=0.00 tau_m=135ms -> 1.193 mm
+    eta/E=22.0ms beta=0.00 tau_m=84ms -> 1.532 mm
+    eta/E=15.6ms beta=0.00 tau_m=130ms -> 1.157 mm
+    eta/E=14.8ms beta=0.00 tau_m=66ms -> 1.198 mm
+    eta/E=15.6ms beta=0.00 tau_m=83ms -> 1.155 mm
+    eta/E=13.5ms beta=0.00 tau_m=58ms -> 1.318 mm
+    eta/E=17.0ms beta=0.00 tau_m=109ms -> 1.144 mm
+    eta/E=16.7ms beta=0.00 tau_m=53ms -> 1.141 mm
+    eta/E=17.2ms beta=0.00 tau_m=34ms -> 1.150 mm
+    eta/E=17.4ms beta=0.00 tau_m=63ms -> 1.154 mm
+    eta/E=16.9ms beta=0.00 tau_m=67ms -> 1.144 mm
+    eta/E=17.9ms beta=0.00 tau_m=84ms -> 1.174 mm
+    eta/E=16.3ms beta=0.00 tau_m=68ms -> 1.141 mm
+    eta/E=16.4ms beta=0.00 tau_m=36ms -> 1.141 mm
+    eta/E=16.0ms beta=0.00 tau_m=39ms -> 1.146 mm
+    eta/E=16.7ms beta=0.00 tau_m=58ms -> 1.142 mm
+    eta/E=16.2ms beta=0.00 tau_m=44ms -> 1.142 mm
+    eta/E=16.6ms beta=0.00 tau_m=55ms -> 1.462 mm
+    eta/E=16.5ms beta=0.00 tau_m=60ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=44ms -> 1.141 mm
+    eta/E=16.7ms beta=0.00 tau_m=56ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=52ms -> 1.141 mm
+    eta/E=16.3ms beta=0.00 tau_m=48ms -> 1.142 mm
+    eta/E=16.6ms beta=0.00 tau_m=54ms -> 1.141 mm
+    eta/E=16.4ms beta=0.00 tau_m=50ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=53ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=69ms -> 1.141 mm
+    eta/E=16.6ms beta=0.00 tau_m=70ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=56ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=57ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=65ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=56ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=65ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=58ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=58ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=60ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=56ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=54ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=53ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=57ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=59ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=58ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=55ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=55ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=57ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=56ms -> 1.141 mm
+    eta/E=16.5ms beta=0.00 tau_m=56ms -> 1.141 mm
+  fitted: eta=5.42e+04 Pa*s (eta/E = 16.5 ms), beta=0.00, tau_m=57 ms, RMSE 1.14 mm
+
+[4] identifiability scan over (E, eta/E)
+    E=0.55 MPa: 2.75 1.86 1.27 1.07 1.35 2.07 3.29
+    E=1.09 MPa: 2.78 1.90 1.32 1.12 1.37 2.07 3.78
+    E=2.18 MPa: 2.79 1.92 1.34 1.13 1.38 2.08 3.29
+    E=4.37 MPa: 2.79 1.93 1.35 1.14 1.39 2.08 3.30
+    E=8.74 MPa: 2.78 1.93 1.36 2.58 1.39 2.08 3.30
+    E=17.48 MPa: 2.78 1.93 1.36 1.15 1.39 2.08 3.30
+
+done in 282s -> results/fit.json, results/fit_summary.png

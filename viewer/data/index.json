@@ -1,0 +1,72 @@
+{
+ "E_MPa": 3.277460321183515,
+ "eta_over_E_ms": 16.531928223565142,
+ "nu": 0.49,
+ "train_snap_rmse_mm": 1.1406161835934816,
+ "events": [
+  {
+   "key": "pressedhard_120fps_take5_test_0",
+   "split": "test",
+   "snap": false,
+   "fps": 120,
+   "label": "Test squeeze 1",
+   "kind": "finger-limited",
+   "metrics": {
+    "press_rmse_mm": 0.31,
+    "recovery_rmse_mm": 5.42,
+    "rise_obs_ms": 50.0,
+    "rise_sim_ms": 33.3,
+    "squeeze_mm": 25.6,
+    "hold_s": 0.94
+   }
+  },
+  {
+   "key": "pressedhard_120fps_take5_test_1",
+   "split": "test",
+   "snap": false,
+   "fps": 120,
+   "label": "Test squeeze 2",
+   "kind": "finger-limited",
+   "metrics": {
+    "press_rmse_mm": 0.15,
+    "recovery_rmse_mm": 4.28,
+    "rise_obs_ms": 50.0,
+    "rise_sim_ms": 33.3,
+    "squeeze_mm": 19.3,
+    "hold_s": 0.62
+   }
+  },
+  {
+   "key": "pressedhard_120fps_take5_test_2",
+   "split": "test",
+   "snap": true,
+   "fps": 120,
+   "label": "Test squeeze 3",
+   "kind": "free snap",
+   "metrics": {
+    "press_rmse_mm": 0.43,
+    "recovery_rmse_mm": 1.34,
+    "rise_obs_ms": 16.7,
+    "rise_sim_ms": 33.3,
+    "squeeze_mm": 24.6,
+    "hold_s": 0.73
+   }
+  },
+  {
+   "key": "pressedsoft_240fps_take1_train_1",
+   "split": "train",
+   "snap": true,
+   "fps": 240,
+   "label": "Train snap (fit)",
+   "kind": "free snap",
+   "metrics": {
+    "press_rmse_mm": 0.48,
+    "recovery_rmse_mm": 1.14,
+    "rise_obs_ms": 20.8,
+    "rise_sim_ms": 33.3,
+    "squeeze_mm": 25.6,
+    "hold_s": 0.58
+   }
+  }
+ ]
+}
