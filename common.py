@@ -1,7 +1,3 @@
-"""
-common.py - shared helpers: load tracks, clean them, find squeeze events,
-and run one event through the simulator.
-"""
 import json
 import os
 
@@ -20,11 +16,7 @@ HEIGHT = OBJ["height_mm"] / 1000.0
 RATED_FORCE_N = OBJ["rated_kg"] * 9.81
 
 
-# ----------------------------------------------------------------------------
-# tracks
-# ----------------------------------------------------------------------------
 def load_track(name):
-    """Tracked hole diameters (mm) with glitches removed, plus rest values."""
     d = pd.read_csv(os.path.join(HERE, "results", "tracks", f"{name}.csv"))
     mn = d.hole_minor_mm.to_numpy(float).copy()
     mj = d.hole_major_mm.to_numpy(float).copy()
@@ -32,8 +24,6 @@ def load_track(name):
     rest = mn >= 0.97 * top
     rest_minor = float(np.nanmedian(mn[rest]))
     rest_major = float(np.nanmedian(mj[rest]))
-    # a squeezed hole only gets wider; a 'major' far below rest means the
-    # hole contour split in two (nearly closed) or was misdetected
     bad = (mj < 0.85 * rest_major) | (mn > 1.1 * rest_minor)
     mn[bad] = np.nan
     mj[bad] = np.nan
@@ -43,9 +33,6 @@ def load_track(name):
 
 
 def find_events(tr, squeeze_mm=4.0):
-    """Split a track into squeeze events. For each: start index, index of
-    maximum squeeze, release index (last frame still near the maximum
-    squeeze) and recovery timings."""
     t, mn, rest = tr["t"], tr["minor"], tr["rest_minor"]
     filled = pd.Series(mn).ffill().bfill().to_numpy()
     sq = filled < rest - squeeze_mm
@@ -59,7 +46,6 @@ def find_events(tr, squeeze_mm=4.0):
         j = i
         while j < n and sq[j]:
             j += 1
-        # walk back to where the squeeze began (within 1 mm of rest)
         s = i
         while s > 0 and filled[s - 1] < rest - 1.0:
             s -= 1
@@ -70,7 +56,6 @@ def find_events(tr, squeeze_mm=4.0):
         r = k
         while r + 1 < n and filled[r + 1] < thr:
             r += 1
-        # recovery timing from the release frame
         lvl = lambda p: mmin + p * (rest - mmin)
         def cross(p):
             idx = np.where(filled[r:] >= lvl(p))[0]
@@ -80,12 +65,9 @@ def find_events(tr, squeeze_mm=4.0):
                  squeeze_mm=float(rest - mmin), hold_s=float(t[r] - t[s]),
                  t10=cross(0.1), t90=cross(0.9), t97=cross(0.97))
         e["rise_10_90_ms"] = 1000 * (e["t90"] - e["t10"])
-        # 'snap' = the fingers slipped off faster than the ring recovers, so
-        # the recovery is free. Slower releases are limited by the fingers.
         e["snap"] = bool(e["rise_10_90_ms"] < 40.0)
         ev.append(e)
         i = j
-    # merge events separated only by a tracking gap (no real recovery between)
     merged = []
     for e in ev:
         if merged and np.nanmax(filled[merged[-1]["release"]:e["start"] + 1]) < rest - 2.0:
@@ -107,9 +89,6 @@ def all_events(split=None):
     return out
 
 
-# ----------------------------------------------------------------------------
-# simulator wrapper
-# ----------------------------------------------------------------------------
 def make_sim(params, r_in):
     s = RingSim(r_in=r_in, r_out=R_OUT, height=HEIGHT, mass=MASS,
                 finger_r=params.get("finger_r", 0.008))
@@ -119,8 +98,6 @@ def make_sim(params, r_in):
 
 
 def static_sweep(params, r_in, min_gap=0.044, n=26):
-    """Quasi-static squeeze: finger gap -> hole minor/major (mm) and finger
-    force (N). Long-term (relaxed) response."""
     s = make_sim(params, r_in)
     rest_mn, rest_mj = [v * 1e3 for v in s.hole_axes()]
     gaps = np.linspace(2 * R_OUT, min_gap, n)
@@ -133,8 +110,6 @@ def static_sweep(params, r_in, min_gap=0.044, n=26):
 
 
 def gap_from_dminor(sweep, dminor):
-    """Invert the static map: finger gap that produces a given change of the
-    hole's squeeze-axis diameter (mm). Positive/zero change -> no contact."""
     dm = sweep["dminor"]
     g = sweep["gap"]
     order = np.argsort(dm)
@@ -144,14 +119,6 @@ def gap_from_dminor(sweep, dminor):
 
 def simulate_event(params, tr, ev, sweep, r_in, after_s=0.30, lead_s=0.05,
                    dt_press=2e-3, dt_free=2e-4, record=False):
-    """Re-enact one squeeze.
-
-    Press phase (input): the fingers move so that the simulated hole's
-      squeeze-axis diameter follows the video (through the static map).
-    Release (prediction): at the release frame the fingers are removed and
-      the ring recovers on its own ('free'), using only the fitted material.
-
-    Returns sim and observed curves on the video frame times."""
     t, mn = tr["t"], tr["minor"]
     t0 = max(t[0], ev["t_start"] - lead_s)
     tr_ = ev["t_release"]
@@ -170,7 +137,6 @@ def simulate_event(params, tr, ev, sweep, r_in, after_s=0.30, lead_s=0.05,
     tt = t0
     while fi < len(frames):
         tf = t[frames[fi]]
-        # advance to this frame time
         while tt < tf - 1e-9:
             if tt < tr_ - 1e-9:
                 dt = min(dt_press, tr_ - tt, tf - tt)
@@ -197,7 +163,6 @@ def simulate_event(params, tr, ev, sweep, r_in, after_s=0.30, lead_s=0.05,
 
 
 def recovery_error(res, window=(0.0, 0.25)):
-    """RMSE (mm) of minor and major over the recovery window after release."""
     m = (res["t"] >= res["t_release"] + window[0]) & (res["t"] <= res["t_release"] + window[1])
     e1 = res["sim_minor"][m] - res["obs_minor"][m]
     e2 = res["sim_major"][m] - res["obs_major"][m]
@@ -207,7 +172,6 @@ def recovery_error(res, window=(0.0, 0.25)):
 
 
 def rise_time_ms(t, y, t_release, rest):
-    """10-90 % recovery time of the squeeze-axis diameter after release."""
     m = t >= t_release
     t, y = t[m], y[m]
     y0 = y[0]

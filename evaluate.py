@@ -1,21 +1,3 @@
-"""
-evaluate.py - run every squeeze (train and test) through the fitted model.
-
-For each squeeze the press is re-enacted from the video (the fingers move so
-the simulated hole's squeeze-axis diameter follows the video). Everything
-else is predicted by the model:
-  * how much the hole widens ACROSS the squeeze during the press (shape)
-  * the recovery after release, with the fingers removed at the release frame
-    (free recovery: the model's own dynamics, no replay)
-
-Squeezes where the fingers slipped off fast ('snap') test the dynamics.
-For slow releases the fingers stay on the ring, so the observed recovery is
-the hand's speed. The model is expected to recover faster there, and the
-ratio is reported.
-
-Writes results/metrics.csv, results/metrics.md, results/eval_*.png,
-results/sim_<trial>_<k>.npz (used by render.py)
-"""
 import json
 import os
 
@@ -70,7 +52,6 @@ def main():
     with open(os.path.join(OUT, "metrics.md"), "w") as f:
         f.write(df.to_markdown(index=False))
 
-    # ---- figure 1: the test take, full timeline
     test = [k for k, (e, _, _) in results.items() if e["split"] == "test"]
     fig, axes = plt.subplots(len(test), 2, figsize=(15, 3.6 * len(test)),
                              gridspec_kw=dict(width_ratios=[2.2, 1]), squeeze=False)
@@ -96,7 +77,6 @@ def main():
     plt.tight_layout()
     plt.savefig(os.path.join(OUT, "eval_test.png"), dpi=120)
 
-    # ---- figure 2: free snaps, train vs test, recovery only
     snaps = [k for k, (e, _, _) in results.items() if e["snap"]]
     fig, ax = plt.subplots(1, len(snaps), figsize=(6.5 * len(snaps), 4.2), squeeze=False)
     for a, key in zip(ax[0], snaps):
@@ -114,7 +94,6 @@ def main():
     plt.tight_layout()
     plt.savefig(os.path.join(OUT, "eval_snaps.png"), dpi=120)
 
-    # ---- figure 3: rise times for all squeezes
     fig, a = plt.subplots(figsize=(11, 4))
     x = np.arange(len(df))
     a.bar(x - 0.2, df.rise_10_90_obs_ms, 0.4, label="video", color="#868e96")

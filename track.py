@@ -1,25 +1,3 @@
-"""
-track.py - extract the ring's deformation from a top-down video.
-
-For each frame we segment the orange ring by colour, find the hole (the
-largest hole inside the ring mask) and fit an ellipse to it. The hole is never
-covered by the fingers (they press on the outside), so it is the cleanest
-signal in the shot.
-
-Per frame we record:
-  hole_minor_mm  - hole size along the squeeze direction (the "vertical" diameter)
-  hole_major_mm  - hole size across the squeeze (the "horizontal" diameter)
-  outer_w_mm     - outer width of the ring, left-right (fingers do not cover it)
-  angle_deg      - ellipse orientation, cx/cy - hole centre (px)
-
-Pixel -> mm scale comes from the rest frames: the outer left-right width of
-the ring (never covered by the fingers) is set to the measured 86 mm. The
-hole diameter at rest that this implies is printed as a sanity check.
-
-Usage:
-    python track.py --video data/pressedhard_240fps_take2_train.mp4 --fps 240
-    python track.py --all            # every video listed in trials.json
-"""
 import argparse
 import json
 import os
@@ -30,8 +8,6 @@ import numpy as np
 INNER_D_MM = 56.0
 OUTER_D_MM = 86.0
 
-# HSV range for the orange ring. Skin has lower saturation, the teal mat a
-# hue around 90, so this range is very selective.
 H_LO, H_HI, S_LO, V_LO = 8, 28, 120, 90
 
 
@@ -40,24 +16,21 @@ def ring_mask(frame_bgr):
     h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
     m = ((h >= H_LO) & (h <= H_HI) & (s >= S_LO) & (v >= V_LO)).astype(np.uint8) * 255
     k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
-    m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, k)  # fill the black marker dots
-    m = cv2.morphologyEx(m, cv2.MORPH_OPEN, k)   # drop specks
+    m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, k)
+    m = cv2.morphologyEx(m, cv2.MORPH_OPEN, k)
     return m
 
 
 def measure(frame_bgr):
-    """Return hole ellipse + outer extent in pixels, or None if not found."""
     m = ring_mask(frame_bgr)
     contours, hier = cv2.findContours(m, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
     if hier is None or len(contours) == 0:
         return None
     hier = hier[0]
-    # largest outer contour = ring
     outer_ids = [i for i in range(len(contours)) if hier[i][3] == -1]
     ring = max(outer_ids, key=lambda i: cv2.contourArea(contours[i]))
     if cv2.contourArea(contours[ring]) < 20000:
         return None
-    # its largest child = the hole
     child = hier[ring][2]
     best, best_a = None, 0.0
     while child != -1:
@@ -69,7 +42,6 @@ def measure(frame_bgr):
         return None
     (cx, cy), (d1, d2), ang = cv2.fitEllipse(contours[best])
     minor, major = min(d1, d2), max(d1, d2)
-    # orientation of the minor axis, degrees from image x-axis
     minor_ang = ang if d1 <= d2 else ang + 90.0
     x, y, w, h = cv2.boundingRect(contours[ring])
     return dict(cx=cx, cy=cy, minor_px=minor, major_px=major,
@@ -107,8 +79,6 @@ def track_video(path, fps, out_csv, debug_dir=None):
     outer_w = np.array([r.get("outer_w_px", np.nan) for r in rows])
     area = np.array([r.get("hole_area_px", np.nan) for r in rows])
 
-    # glitch filter: hole area that jumps away from its local median
-    # (glare or a finger shadow briefly splitting the hole contour)
     from scipy.ndimage import median_filter
     a_med = median_filter(np.nan_to_num(area), size=7, mode="nearest")
     glitch = valid & (np.abs(area - a_med) > 0.25 * a_med)
@@ -116,11 +86,8 @@ def track_video(path, fps, out_csv, debug_dir=None):
     for arr in (minor, major, outer_w):
         arr[~valid] = np.nan
 
-    # rest frames = the most open hole (fingers not pressing)
     top = np.nanpercentile(minor, 95)
     rest = valid & (minor >= 0.97 * top)
-    # scale from the outer diameter (fingers press top/bottom, so the
-    # left-right outer width is never covered)
     px_per_mm = np.nanmedian(outer_w[rest]) / OUTER_D_MM
     hole_rest_mm = np.nanmedian(0.5 * (minor[rest] + major[rest])) / px_per_mm
     outer_check = np.nanmedian(outer_w[rest]) / px_per_mm

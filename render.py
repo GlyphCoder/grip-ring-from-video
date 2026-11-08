@@ -1,16 +1,3 @@
-"""
-render.py - side-by-side demo video + data for the 3D web viewer.
-
-For each squeeze in the test take (and the training snap):
-  left   real video, cropped around the ring
-  middle the fitted model, top-down, same scale (fingers drawn while touching)
-  bottom hole diameters over time, video (dots) vs model (lines), with cursor
-
-Also exports viewer/data/*.json: the 2D finite-element motion mapped onto a 3D
-torus (round tube, the ring's real cross-section), for viewer/index.html.
-
-Writes results/demo.mp4 and viewer/data/
-"""
 import base64
 import json
 import os
@@ -27,7 +14,7 @@ from common import HERE, R_OUT, TRIALS, all_events, load_track
 OUT = os.path.join(HERE, "results")
 VIEW = os.path.join(HERE, "viewer", "data")
 W_PANEL, H_PANEL, H_PLOT = 640, 540, 260
-ORANGE = (40, 150, 245)   # BGR
+ORANGE = (40, 150, 245)
 SKIN = (150, 175, 215)
 
 
@@ -62,9 +49,8 @@ def centre(name, frames):
 
 
 def draw_sim(x, tris, inner, gap, finger_r, scale, size):
-    """Top-down drawing of the deformed mesh. x in metres, scale px/m."""
     W, H = size
-    img = np.full((H, W, 3), (190, 175, 60), np.uint8)  # teal, like the mat
+    img = np.full((H, W, 3), (190, 175, 60), np.uint8)
     P = np.stack([W / 2 + x[:, 0] * scale, H / 2 - x[:, 1] * scale], 1)
     for t in tris:
         cv2.fillConvexPoly(img, np.round(P[t] * 16).astype(np.int32), ORANGE, cv2.LINE_AA, 4)
@@ -91,7 +77,6 @@ def curves_image(res, tr, W, H):
     xlim = ax.get_xlim()
     fig.canvas.draw()
     img = cv2.cvtColor(np.asarray(fig.canvas.buffer_rgba())[..., :3], cv2.COLOR_RGB2BGR)
-    # pixel x of a data x
     x0 = ax.transData.transform((xlim[0], 0))[0]
     x1 = ax.transData.transform((xlim[1], 0))[0]
     plt.close(fig)
@@ -114,9 +99,9 @@ def event_frames(key, e):
     real = read_frames(os.path.join(HERE, info["video"]), frames)
     ppm = px_per_mm(e["trial"])
     cx, cy = centre(e["trial"], frames)
-    half = int(1.25 * R_OUT * 1000 * ppm)  # crop half-size in px
-    scale_out = H_PANEL / (2 * half)       # crop -> panel
-    sim_scale = ppm * 1000 * scale_out     # px per metre in panel
+    half = int(1.25 * R_OUT * 1000 * ppm)
+    scale_out = H_PANEL / (2 * half)
+    sim_scale = ppm * 1000 * scale_out
     plot, (xlim, x0, x1) = curves_image(res, tr, 2 * W_PANEL, H_PLOT)
     kind = "free snap" if e["snap"] else "finger-limited release"
     out, crops = [], []
@@ -143,12 +128,7 @@ def event_frames(key, e):
     return out, res, crops
 
 
-# ---------------------------------------------------------------------------
-# 3D torus export for the web viewer
-# ---------------------------------------------------------------------------
 def torus(r_in, r_out, n_u=128, n_v=32):
-    """Round-tube torus matching the ring (tube diameter = wall width).
-    Returns vertices, faces and each vertex's (angle, radius) in the plane."""
     Rc = (r_in + r_out) / 2
     a = (r_out - r_in) / 2
     u = np.linspace(0, 2 * np.pi, n_u, endpoint=False)
@@ -168,10 +148,6 @@ def torus(r_in, r_out, n_u=128, n_v=32):
 
 
 def grid_weights(theta, r, r_in, r_out, n_theta, n_r):
-    """Bilinear weights in the structured annulus mesh (angle x radius), so
-    every point of the torus -- including the exact outer and inner edges --
-    is tied to the 4 surrounding mesh nodes. (Point-in-triangle lookup fails
-    on the edges: the mesh boundary is a polygon, the torus is a circle.)"""
     s = (theta % (2 * np.pi)) / (2 * np.pi) * n_theta
     i0 = np.floor(s).astype(int) % n_theta
     i1 = (i0 + 1) % n_theta
@@ -193,7 +169,6 @@ def export_viewer(key, e, res, info, metrics):
     r_in = float(np.linalg.norm(X[res["inner"][0]]))
     r_out = float(np.linalg.norm(X[res["outer"][0]]))
     P, F, th, rr = torus(r_in, r_out)
-    # marker dots on the top of the ring, like the pen dots on the real one
     k = np.arange(8)
     mth = 2 * np.pi * (k + 0.5) / 8
     mr = np.full(8, (r_in + r_out) / 2)
@@ -203,11 +178,11 @@ def export_viewer(key, e, res, info, metrics):
                           r_in, r_out, n_theta, n_r)
     frames = []
     for x in res["x"]:
-        disp = x - X                                   # node displacement (m)
-        d = (w[:, :, None] * disp[idx]).sum(1)          # interpolated
+        disp = x - X
+        d = (w[:, :, None] * disp[idx]).sum(1)
         pos = allP.copy()
         pos[:, :2] += d
-        q = np.round(pos * 1000 / 0.005).astype(np.int16)   # 5 um steps
+        q = np.round(pos * 1000 / 0.005).astype(np.int16)
         frames.append(base64.b64encode(q.tobytes()).decode())
     d = dict(key=key, trial=e["trial"], squeeze=e["idx"], split=e["split"],
              snap=bool(e["snap"]), fps=info["capture_fps"], video=f"{key}.mp4",
@@ -224,8 +199,6 @@ def export_viewer(key, e, res, info, metrics):
 
 
 def write_mp4(frames, path, fps=30, seekable=False):
-    """seekable=True: a keyframe every 5 frames and no B-frames, so the web
-    viewer can scrub to an exact frame and stay in sync with the model."""
     h, w = frames[0].shape[:2]
     extra = ["-g", "5", "-bf", "0"] if seekable else []
     p = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24",
@@ -255,14 +228,12 @@ def main():
         key = f"{e['trial']}_{e['idx']}"
         frames, res, crops = event_frames(key, e)
         info = trial_info(e["trial"])
-        # title card
         card = np.zeros_like(frames[0])
         kind = "FREE SNAP (fingers slipped off)" if e["snap"] else "FINGER-LIMITED RELEASE"
         for k, s in enumerate([f"{e['split'].upper()} squeeze: {e['trial']} #{e['idx']}", kind,
                                f"played at 30 fps = {info['capture_fps']//30}x slow motion"]):
             cv2.putText(card, s, (40, 200 + 50 * k), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2, cv2.LINE_AA)
         all_frames += [card] * 45 + frames + [frames[-1]] * 15
-        # per-event clip for the web viewer (left panel only, real video)
         os.makedirs(VIEW, exist_ok=True)
         write_mp4(crops, os.path.join(VIEW, f"{key}.mp4"), seekable=True)
         row = metrics[(metrics["trial"] == e["trial"]) & (metrics["squeeze"] == e["idx"])].iloc[0]

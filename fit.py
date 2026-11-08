@@ -1,29 +1,3 @@
-"""
-fit.py - learn the ring's material from the training videos.
-
-Each kind of visual observation informs a different parameter:
-
- 1. SHAPE while squeezed (quasi-static press phases, all training events)
-    -> Poisson ratio nu and fingertip radius r_f.
-    For a displacement-driven squeeze, the shape does not depend on how stiff
-    the rubber is, only on nu and the geometry. So we ask: given how much the
-    hole shrank along the squeeze axis, how much does the model say it widened
-    across it, and does that match the video?
-
- 2. STIFFNESS E. The squeeze shape cannot give force, and the snap-back is
-    overdamped (it gives mainly the ratio eta/E, see step 4). With no force
-    sensor, we set E so the force needed to close the hole matches the
-    product's 25 kg rating. This is an assumption, flagged in the README.
-
- 3. DYNAMICS from the free 'snap' release(s) in training (fingers slipped
-    off, ring recovered on its own) -> fast viscosity eta, and the slow
-    relaxing branch (beta, tau_m) that produces the creep tail.
-
- 4. IDENTIFIABILITY scan over (E, eta): shows which combination the video
-    actually pins down.
-
-Writes results/fit.json and results/fit_*.png
-"""
 import json
 import os
 import time
@@ -46,9 +20,6 @@ def mean_rest_hole_radius():
     return float(np.mean([x["hole_rest_from_video_mm"] for x in s])) / 2000.0
 
 
-# ---------------------------------------------------------------------------
-# 1. static shape -> nu, finger radius
-# ---------------------------------------------------------------------------
 def press_samples(events):
     xs, ys = [], []
     for e in events:
@@ -61,7 +32,7 @@ def press_samples(events):
     return np.concatenate(xs), np.concatenate(ys)
 
 
-VALID_SQUEEZE_MM = 30.0  # model shape is trusted up to here (see README)
+VALID_SQUEEZE_MM = 30.0
 
 
 def fit_static(r_in, events):
@@ -86,17 +57,10 @@ def fit_static(r_in, events):
     return best, grid, (x, y)
 
 
-# ---------------------------------------------------------------------------
-# 2. stiffness from the 25 kg rating
-# ---------------------------------------------------------------------------
 def calibrate_E(r_in, nu, rf):
     E_ref = 1e6
     sw = static_sweep(dict(E=E_ref, nu=nu, eta=1e4, beta=0.0, tau_m=0.1, finger_r=rf),
                       r_in, min_gap=0.030, n=30)
-    # force to close the hole (squeeze-axis diameter -> 0): extrapolate the
-    # linear part of the force curve (5-30 mm squeeze). Near closure the
-    # model softens (the ring folds), and the real ring stiffens on
-    # self-contact, so the linear stiffness is the fairer comparison.
     rest_hole = 2 * r_in * 1e3
     closed = -rest_hole
     x, f = sw["dminor"], sw["force"]
@@ -109,14 +73,7 @@ def calibrate_E(r_in, nu, rf):
     return E, sw
 
 
-# ---------------------------------------------------------------------------
-# 3. dynamics from free snaps
-# ---------------------------------------------------------------------------
 def fit_dynamics(r_in, static_params, snaps, sweeps):
-    """Fit eta, beta, tau_m to the free snap(s), with E fixed (from the
-    rating). A first version also left E free: it wandered anywhere between
-    0.5 and 20 MPa with < 0.1 mm change in error, which the scan in step 4
-    shows directly. The snap is overdamped, so the video pins eta/E only."""
     tracks = {e["trial"]: load_track(e["trial"]) for e in snaps}
     hist = []
     E = static_params["E"]
@@ -193,7 +150,6 @@ def main():
                history=hist)
     json.dump(res, open(os.path.join(OUT, "fit.json"), "w"), indent=2)
 
-    # ---- plots
     fig, ax = plt.subplots(1, 3, figsize=(16, 4.6))
     o = np.argsort(sweep["dminor"])
     ax[0].plot(-x, y, ".", ms=2, alpha=0.4, color="#888", label="video (train presses)")
